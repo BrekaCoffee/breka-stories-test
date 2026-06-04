@@ -2067,7 +2067,7 @@ function initQuotes(){
    SUBMIT — kirim ke Google Sheets via Apps Script
    GANTI URL DI BAWAH dengan URL deployment kamu!
 ═══════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "PASTE_URL_APPS_SCRIPT_KAMU_DI_SINI";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8nZySs-kI1lMmfs3ODWj4BHdyOb1NKNbcIR_O4nLDkmrVEGn0JXL6WTTBU1aSggOZmQ/exec";
 //
 // Contoh URL yang benar:
 // "https://script.google.com/macros/s/AKfycbXXXXXXXXXX/exec"
@@ -2096,7 +2096,7 @@ async function submitStory(){
   err.classList.remove('on');
 
   // Cek apakah URL sudah diisi
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycby0hUYVQnYgUeMGhaCc77l3ApKXEsgCj2PX0CbJYihlPNY5K2q1RLRClKzdqrUxG7RPcQ/exec')) {
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_URL')) {
     showToast('⚙️ Form belum terhubung ke Google Sheets. Setup dulu ya!');
     return;
   }
@@ -2106,15 +2106,20 @@ async function submitStory(){
   btn.textContent = 'Mengirim...';
 
   try {
-    const res = await fetch(APPS_SCRIPT_URL, {
+    // Kirim pakai FormData — cara yang benar untuk Google Apps Script
+    const formData = new FormData();
+    formData.append('nama', nama);
+    formData.append('kontak', kontak);
+    formData.append('judul', judul);
+    formData.append('cerita', cerita);
+
+    await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode:   'no-cors', // Google Apps Script perlu ini
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, kontak, judul, cerita })
+      mode: 'no-cors',
+      body: formData
     });
 
-    // no-cors tidak bisa baca response, jadi anggap sukses
-    // Reset form
+    // no-cors tidak bisa baca response, anggap sukses
     ['fName','fContact','fTitle','fContent'].forEach(id=>document.getElementById(id).value='');
     ok.classList.add('on');
     setTimeout(()=>ok.classList.remove('on'), 8000);
