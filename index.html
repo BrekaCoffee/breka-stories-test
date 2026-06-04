@@ -2067,19 +2067,42 @@ function initQuotes(){
    SUBMIT — kirim ke Google Sheets via Apps Script
    GANTI URL DI BAWAH dengan URL deployment kamu!
 ═══════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8nZySs-kI1lMmfs3ODWj4BHdyOb1NKNbcIR_O4nLDkmrVEGn0JXL6WTTBU1aSggOZmQ/exec";
-//
-// Contoh URL yang benar:
-// "https://script.google.com/macros/s/AKfycbXXXXXXXXXX/exec"
-//
-// Cara dapat URL-nya → baca file breka-stories-script.gs
-// yang ada di folder yang sama dengan index.html ini.
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbw8nZySs-kI1lMmfs3ODWj4BHdyOb1NKNbcIR_O4nLDkmrVEGn0JXL6WTTBU1aSggOZmQ/exec";
 
-async function submitStory(){
-  const nama   = document.getElementById('fName').value.trim();
-  const kontak = document.getElementById('fContact').value.trim();
-  const judul  = document.getElementById('fTitle').value.trim();
-  const cerita = document.getElementById('fContent').value.trim();
+async function kirimCerita() {
+
+  const payload = {
+    nama: document.getElementById("nama").value,
+    kontak: document.getElementById("kontak").value,
+    judul: document.getElementById("judul").value,
+    cerita: document.getElementById("cerita").value
+  };
+
+  try {
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+
+    console.log("Response:", text);
+
+    alert("Submit selesai. Cek Console.");
+
+  } catch (err) {
+
+    console.error("ERROR:", err);
+
+    alert("Gagal mengirim data.");
+
+  }
+}
 
   // Validasi
   if(!nama)   { showToast('Isi nama kamu dulu ya! 😊'); document.getElementById('fName').focus(); return; }
