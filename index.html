@@ -2096,17 +2096,8 @@ async function submitStory(){
   err.classList.remove('on');
 
   // Cek apakah URL sudah diisi
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "https://script.google.com/macros/s/AKfycby0hUYVQnYgUeMGhaCc77l3ApKXEsgCj2PX0CbJYihlPNY5K2q1RLRClKzdqrUxG7RPcQ/exec") {
-    // Mode demo — belum setup Google Sheets
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycby0hUYVQnYgUeMGhaCc77l3ApKXEsgCj2PX0CbJYihlPNY5K2q1RLRClKzdqrUxG7RPcQ/exec')) {
     showToast('⚙️ Form belum terhubung ke Google Sheets. Setup dulu ya!');
-    console.warn('Breka Stories: Isi APPS_SCRIPT_URL dengan URL deployment Google Apps Script kamu.');
-    // Tapi tetap tampilkan sukses untuk demo
-    btn.classList.add('loading');
-    await new Promise(r => setTimeout(r, 1200));
-    btn.classList.remove('loading');
-    ['fName','fContact','fTitle','fContent'].forEach(id=>document.getElementById(id).value='');
-    ok.classList.add('on');
-    setTimeout(()=>ok.classList.remove('on'), 6000);
     return;
   }
 
