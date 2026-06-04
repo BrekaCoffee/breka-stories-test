@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Breka Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Mulish:wght@300;400;500;600&family=Space+Mono:wght@400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* =====================================================
+   TOKENS
+===================================================== */
+:root{
+  --ink:    #1a1410;
+  --ink2:   #3d2f24;
+  --paper:  #f7f2eb;
+  --paper2: #ede5d8;
+  --paper3: #e4d9c9;
+  --coffee: #8b5e3c;
+  --coffee2:#a87348;
+  --warm:   #c8a46a;
+  --warm2:  #dfc090;
+  --cream:  #f9f5ef;
+  --line:   rgba(139,94,60,.14);
+  --line2:  rgba(139,94,60,.07);
+
+  --serif:  'Libre Baskerville', Georgia, serif;
+  --sans:   'Mulish', system-ui, sans-serif;
+  --mono:   'Space Mono', monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* =====================================================
+   CURSOR — titik kopi kecil
+===================================================== */
+#cur{
+  position:fixed;width:8px;height:8px;
+  border-radius:50%;background:var(--coffee);
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:width .2s,height .2s,background .2s;
+}
+#cur-o{
+  position:fixed;width:32px;height:32px;
+  border-radius:50%;border:1px solid rgba(139,94,60,.4);
+  pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+}
+body:has(a:hover) #cur,body:has(button:hover) #cur{width:16px;height:16px;background:var(--warm)}
+
+/* =====================================================
+   3D CANVAS — BACKGROUND
+===================================================== */
+#bg{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;
+}
+/* Grain film texture */
+#grain{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px;
+}
+
+/* =====================================================
+   SEMUA KONTEN — di atas canvas
+===================================================== */
+.layer{position:relative;z-index:10}
+
+/* =====================================================
+   NAVBAR — sangat tipis, seperti majalah
+===================================================== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  padding:0 48px;
+  height:56px;
+  background:rgba(247,242,235,.88);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line);
+  transition:background .3s;
+}
+nav.solid{background:rgba(247,242,235,.97)}
+.nav-left{display:flex;gap:28px}
+.nav-left a,.nav-right a{
+  font-size:.65rem;font-weight:600;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(26,20,16,.4);text-decoration:none;
+  transition:color .2s;
+}
+.nav-left a:hover,.nav-right a:hover{color:var(--coffee)}
+.nav-center{text-align:center}
+.nav-logo{
+  font-family:var(--serif);
+  font-size:1.1rem;font-weight:700;
+  letter-spacing:.02em;color:var(--ink);
+  text-decoration:none;
+}
+.nav-logo span{color:var(--coffee)}
+.nav-right{display:flex;justify-content:flex-end;align-items:center;gap:20px}
+.nav-theme{
+  width:32px;height:18px;border-radius:9px;
+  background:var(--line);border:1px solid var(--line);
+  cursor:pointer;position:relative;
+  transition:background .3s;
+}
+.nav-theme::after{
+  content:'';position:absolute;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--coffee);top:2px;left:2px;
+  transition:transform .25s;
+}
+body.dark .nav-theme::after{transform:translateX(14px)}
+
+/* Dark mode overrides */
+body.dark{background:#100d0a;color:#f0e8dc}
+body.dark nav{background:rgba(16,13,10,.88);border-color:rgba(139,94,60,.1)}
+body.dark nav.solid{background:rgba(16,13,10,.97)}
+body.dark .nav-logo{color:#f0e8dc}
+body.dark .nav-left a,body.dark .nav-right a{color:rgba(240,232,220,.35)}
+body.dark .nav-left a:hover,body.dark .nav-right a:hover{color:var(--warm)}
+body.dark .hero-kicker{color:rgba(240,232,220,.4)}
+body.dark .hero-title{color:#f0e8dc}
+body.dark .hero-sub{color:rgba(240,232,220,.55)}
+body.dark .hero-meta{border-color:rgba(139,94,60,.15);color:rgba(240,232,220,.35)}
+body.dark .stories-bg{background:#130f0b}
+body.dark .story-card{background:#1c1610;border-color:rgba(139,94,60,.12)}
+body.dark .story-card:hover{background:#221a12}
+body.dark .story-title{color:#f0e8dc}
+body.dark .story-desc{color:rgba(240,232,220,.5)}
+body.dark .story-tag{color:var(--warm)}
+body.dark .story-meta{color:rgba(240,232,220,.3)}
+body.dark .story-divider{background:rgba(139,94,60,.1)}
+body.dark .quote-bg{background:#130f0b;border-color:rgba(139,94,60,.12)}
+body.dark .quote-mark{color:rgba(139,94,60,.12)}
+body.dark .quote-text{color:#f0e8dc}
+body.dark .quote-attr{color:rgba(240,232,220,.35)}
+body.dark .topics-bg{background:#100d0a}
+body.dark .topic-item{border-color:rgba(139,94,60,.1)}
+body.dark .topic-item:hover{background:#1c1610}
+body.dark .topic-name{color:#f0e8dc}
+body.dark .topic-sub{color:rgba(240,232,220,.35)}
+body.dark .submit-bg{background:#130f0b;border-color:rgba(139,94,60,.12)}
+body.dark .form-input,body.dark .form-textarea{background:rgba(139,94,60,.06);border-color:rgba(139,94,60,.15);color:#f0e8dc}
+body.dark .form-input::placeholder,body.dark .form-textarea::placeholder{color:rgba(240,232,220,.25)}
+body.dark footer{background:#0a0806;border-color:rgba(139,94,60,.1)}
+body.dark .footer-copy{color:rgba(240,232,220,.2)}
+body.dark .footer-links a{color:rgba(240,232,220,.35)}
+body.dark .modal-box{background:#1c1610;border-color:rgba(139,94,60,.15)}
+body.dark .modal-content-text{color:rgba(240,232,220,.7)}
+body.dark .modal-meta{color:rgba(240,232,220,.35);border-color:rgba(139,94,60,.12)}
+body.dark .modal-title{color:#f0e8dc}
+body.dark .modal-close{background:rgba(139,94,60,.1);color:var(--warm)}
+body.dark .search-input{background:rgba(139,94,60,.06);border-color:rgba(139,94,60,.15);color:#f0e8dc}
+body.dark .search-input::placeholder{color:rgba(240,232,220,.25)}
+body.dark .filter-btn{border-color:rgba(139,94,60,.15);color:rgba(240,232,220,.4)}
+body.dark .section-label{color:rgba(240,232,220,.3)}
+body.dark .section-title{color:#f0e8dc}
+body.dark .sotm-bg{background:#130f0b}
+body.dark .sotm-card{background:#1c1610;border-color:rgba(139,94,60,.12)}
+body.dark .sotm-body-bg{background:#1c1610}
+body.dark .sotm-title{color:#f0e8dc}
+body.dark .sotm-desc{color:rgba(240,232,220,.5)}
+body.dark .sotm-meta{color:rgba(240,232,220,.3)}
+body.dark .toast-box{background:#1c1610;border-color:rgba(139,94,60,.15)}
+body.dark .topic-modal-box{background:#1c1610;border-color:rgba(139,94,60,.12)}
+body.dark .topic-hd{background:#1c1610;border-color:rgba(139,94,60,.1)}
+body.dark .topic-item-title{color:#f0e8dc}
+body.dark .reaction-btn{background:rgba(139,94,60,.06);border-color:rgba(139,94,60,.15);color:rgba(240,232,220,.4)}
+
+/* =====================================================
+   HERO — full-screen, editorial split layout
+===================================================== */
+.hero{
+  min-height:100vh;
+  display:grid;
+  grid-template-rows:1fr auto;
+  padding-top:56px;
+  position:relative;z-index:10;
+}
+
+/* Canvas 3D dibelakang hero */
+#hero-canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  z-index:0;pointer-events:none;
+}
+
+.hero-inner{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  position:relative;z-index:2;
+}
+
+/* Kiri — teks */
+.hero-left{
+  padding:80px 56px 80px 56px;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  border-right:1px solid var(--line);
+}
+body.dark .hero-left{border-color:rgba(139,94,60,.1)}
+
+.hero-kicker{
+  font-size:.6rem;font-weight:600;
+  letter-spacing:.26em;text-transform:uppercase;
+  color:rgba(26,20,16,.35);
+  margin-bottom:24px;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;animation:fadeUp .7s .1s ease forwards;
+}
+.hero-kicker::before{
+  content:'';display:block;
+  width:28px;height:1px;background:var(--coffee);opacity:.5;
+}
+.hero-title{
+  font-family:var(--serif);
+  font-size:clamp(44px,5.5vw,80px);
+  font-weight:700;line-height:.93;
+  letter-spacing:-.02em;
+  color:var(--ink);
+  margin-bottom:28px;
+  opacity:0;animation:fadeUp .8s .2s ease forwards;
+}
+.hero-title i{
+  font-style:italic;font-weight:400;
+  color:var(--coffee);
+}
+.hero-sub{
+  font-size:clamp(.85rem,1.1vw,.975rem);
+  line-height:1.82;font-weight:300;
+  color:rgba(26,20,16,.55);
+  max-width:380px;
+  margin-bottom:44px;
+  opacity:0;animation:fadeUp .8s .32s ease forwards;
+}
+.hero-ctas{
+  display:flex;gap:12px;flex-wrap:wrap;
+  opacity:0;animation:fadeUp .8s .44s ease forwards;
+}
+.btn-solid{
+  padding:13px 32px;
+  background:var(--coffee);color:var(--cream);
+  font-family:var(--sans);font-size:.75rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  border:none;cursor:pointer;text-decoration:none;
+  transition:background .2s,transform .15s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-solid:hover{background:var(--ink);transform:translateY(-1px)}
+.btn-outline{
+  padding:13px 28px;
+  background:transparent;color:var(--ink);
+  font-family:var(--sans);font-size:.75rem;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line);cursor:pointer;text-decoration:none;
+  transition:border-color .2s,color .2s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-outline:hover{border-color:var(--coffee);color:var(--coffee)}
+body.dark .btn-solid{color:#f0e8dc}
+body.dark .btn-outline{color:#f0e8dc;border-color:rgba(139,94,60,.2)}
+
+/* Kanan — panel 3D gelap dramatis */
+.hero-right{
+  position:relative;overflow:hidden;
+  background:#0f0a06;
+  opacity:0;animation:fadeIn .9s .4s ease forwards;
+  display:flex;align-items:center;justify-content:center;
+  min-height:460px;
+}
+.hero-right-canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  display:block;
+}
+
+/* Overlay teks di atas canvas kanan */
+.hero-right-overlay{
+  position:absolute;z-index:2;
+  bottom:28px;left:28px;pointer-events:none;
+}
+.hero-count-big{
+  font-family:var(--serif);
+  font-size:clamp(48px,6vw,88px);
+  font-weight:700;line-height:1;
+  color:rgba(200,164,106,.15);
+  display:block;letter-spacing:-.04em;
+}
+.hero-count-label{
+  font-size:.58rem;font-weight:600;
+  letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(200,164,106,.4);
+  display:block;margin-top:4px;font-family:var(--mono);
+}
+/* Badge "Interactive 3D" */
+.hero-right-badge{
+  position:absolute;top:18px;right:18px;z-index:3;
+  font-size:.52rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(200,164,106,.55);
+  border:1px solid rgba(200,164,106,.18);
+  padding:5px 10px;font-family:var(--mono);
+  display:flex;align-items:center;gap:5px;
+  pointer-events:none;
+}
+.hero-right-badge::before{
+  content:'';width:4px;height:4px;border-radius:50%;
+  background:#c8a46a;animation:blink 2s infinite;
+}
+@keyframes blink{0%,100%{opacity:.8}50%{opacity:.2}}
+
+/* Meta strip di bawah hero */
+.hero-meta{
+  grid-column:1/-1;
+  display:flex;align-items:center;
+  border-top:1px solid var(--line);
+  font-size:.65rem;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(26,20,16,.3);
+}
+.hero-meta-item{
+  flex:1;padding:16px 24px;
+  border-right:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;
+}
+.hero-meta-item:last-child{border-right:none}
+.hero-meta-dot{width:5px;height:5px;border-radius:50%;background:var(--coffee);opacity:.4}
+body.dark .hero-meta{border-color:rgba(139,94,60,.1)}
+body.dark .hero-meta-item{border-color:rgba(139,94,60,.08)}
+
+/* =====================================================
+   SOTM — Story of the Month
+   Layout baru: full-bleed horizontal dengan nomor besar
+===================================================== */
+.sotm-bg{
+  position:relative;z-index:10;
+  background:var(--paper2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:72px 0;
+}
+.sotm-inner{
+  max-width:1200px;margin:0 auto;
+  padding:0 56px;
+  display:grid;grid-template-columns:auto 1fr 1fr;
+  gap:56px;align-items:start;
+}
+.sotm-number{
+  font-family:var(--serif);
+  font-size:clamp(80px,10vw,140px);
+  font-weight:700;line-height:.85;
+  color:rgba(139,94,60,.1);
+  letter-spacing:-.04em;
+  user-select:none;
+  padding-top:8px;
+}
+body.dark .sotm-number{color:rgba(139,94,60,.08)}
+.sotm-img-wrap{
+  position:relative;overflow:hidden;
+  aspect-ratio:4/3;cursor:pointer;
+}
+.sotm-img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .6s ease,filter .4s;
+  filter:saturate(.9) brightness(.94);
+}
+.sotm-img-wrap:hover .sotm-img{transform:scale(1.04);filter:saturate(1) brightness(.98)}
+.sotm-img-tag{
+  position:absolute;top:16px;left:16px;
+  font-size:.6rem;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  background:var(--cream);color:var(--coffee);
+  padding:5px 12px;
+}
+body.dark .sotm-img-tag{background:var(--ink);color:var(--warm)}
+
+.sotm-card{
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+  background:var(--cream);
+  border:1px solid var(--line);
+  padding:40px 36px;
+  min-height:320px;
+  cursor:pointer;
+  transition:transform .3s ease;
+}
+.sotm-card:hover{transform:translateY(-3px)}
+.sotm-eyebrow{
+  font-size:.58rem;font-weight:700;
+  letter-spacing:.22em;text-transform:uppercase;
+  color:var(--coffee);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.sotm-eyebrow::before{content:'✦'}
+.sotm-title{
+  font-family:var(--serif);
+  font-size:clamp(17px,1.6vw,23px);
+  font-weight:700;line-height:1.25;
+  color:var(--ink);margin-bottom:14px;
+}
+.sotm-desc{
+  font-size:.845rem;line-height:1.75;
+  color:rgba(26,20,16,.5);font-weight:300;
+  margin-bottom:28px;flex:1;
+}
+.sotm-meta{
+  font-size:.65rem;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(26,20,16,.3);
+  display:flex;align-items:center;gap:8px;
+}
+.sotm-cta-row{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  border-top:1px solid var(--line);
+  padding-top:20px;margin-top:20px;
+}
+.sotm-cta{
+  font-size:.68rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--coffee);
+  display:flex;align-items:center;gap:8px;
+  transition:gap .2s;
+}
+.sotm-cta:hover{gap:14px}
+.sotm-arrow{font-size:1rem}
+
+/* =====================================================
+   SEARCH — satu baris bersih
+===================================================== */
+.search-bar{
+  position:relative;z-index:10;
+  padding:20px 56px;
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;
+}
+body.dark .search-bar{background:#100d0a;border-color:rgba(139,94,60,.1)}
+.search-wrap{position:relative;flex:1;max-width:400px}
+.search-input{
+  width:100%;
+  padding:10px 14px 10px 36px;
+  background:transparent;
+  border:1px solid var(--line);
+  font-family:var(--sans);font-size:.82rem;
+  color:var(--ink);outline:none;
+  transition:border-color .2s;
+}
+.search-input:focus{border-color:var(--coffee)}
+.search-icon{
+  position:absolute;left:12px;top:50%;
+  transform:translateY(-50%);
+  color:rgba(26,20,16,.3);font-size:.8rem;pointer-events:none;
+}
+.search-clear{
+  display:none;position:absolute;right:10px;top:50%;
+  transform:translateY(-50%);
+  background:none;border:none;color:rgba(26,20,16,.35);
+  cursor:pointer;font-size:.75rem;font-weight:600;
+  transition:color .2s;
+}
+.search-clear.on{display:block}
+.search-clear:hover{color:var(--coffee)}
+.filter-group{display:flex;gap:4px}
+.filter-btn{
+  padding:6px 16px;
+  font-family:var(--sans);font-size:.62rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--line);background:transparent;
+  color:rgba(26,20,16,.35);cursor:pointer;
+  transition:all .18s;
+}
+.filter-btn:hover,.filter-btn.on{
+  background:var(--coffee);color:var(--cream);border-color:var(--coffee);
+}
+#searchInfo{font-size:.7rem;color:rgba(26,20,16,.3);font-family:var(--mono)}
+
+/* =====================================================
+   STORIES — grid editorial seperti majalah
+===================================================== */
+.stories-bg{
+  position:relative;z-index:10;
+  background:var(--paper);
+  padding:64px 0 80px;
+}
+.stories-head{
+  display:flex;align-items:baseline;
+  justify-content:space-between;
+  padding:0 56px;
+  margin-bottom:48px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:20px;
+}
+.section-label{
+  font-size:.58rem;font-weight:700;
+  letter-spacing:.24em;text-transform:uppercase;
+  color:rgba(26,20,16,.3);
+  margin-bottom:6px;font-family:var(--mono);
+}
+.section-title{
+  font-family:var(--serif);
+  font-size:clamp(22px,2.5vw,34px);
+  font-weight:700;color:var(--ink);
+  letter-spacing:-.01em;
+}
+.section-title i{font-style:italic;color:var(--coffee)}
+#storiesCount{
+  font-size:.65rem;font-family:var(--mono);
+  color:rgba(26,20,16,.3);
+}
+
+/* Grid stories — layout majalah asimetris */
+.stories-grid{
+  padding:0 56px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:0;
+  border:1px solid var(--line);
+  border-right:none;border-bottom:none;
+}
+
+/* Setiap card */
+.story-card{
+  background:var(--cream);
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  transition:background .2s;
+  display:flex;flex-direction:column;
+}
+.story-card:hover{background:var(--paper2)}
+.story-card.wide{grid-column:span 2}
+
+.story-img-wrap{
+  width:100%;overflow:hidden;
+  aspect-ratio:16/9;position:relative;
+}
+.story-card.wide .story-img-wrap{aspect-ratio:21/9}
+.story-img{
+  width:100%;height:100%;object-fit:cover;
+  display:block;
+  transition:transform .6s ease;
+  filter:saturate(.88) brightness(.93);
+}
+.story-card:hover .story-img{transform:scale(1.04);filter:saturate(.98) brightness(.97)}
+
+.story-body{
+  padding:28px 28px 24px;
+  flex:1;display:flex;flex-direction:column;
+}
+.story-tag{
+  font-size:.58rem;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--coffee);margin-bottom:10px;
+  font-family:var(--mono);
+}
+.story-title{
+  font-family:var(--serif);
+  font-size:clamp(14px,1.3vw,19px);
+  font-weight:700;line-height:1.25;
+  color:var(--ink);margin-bottom:8px;
+}
+.story-card.wide .story-title{font-size:clamp(17px,1.7vw,24px)}
+.story-desc{
+  font-size:.8rem;line-height:1.7;
+  color:rgba(26,20,16,.48);font-weight:300;
+  margin-bottom:16px;flex:1;
+}
+.story-divider{height:1px;background:var(--line);margin-bottom:14px}
+.story-meta{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  font-size:.62rem;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(26,20,16,.3);
+  font-family:var(--mono);
+}
+.story-read{
+  font-size:.62rem;font-weight:600;
+  letter-spacing:.1em;color:var(--coffee);
+  opacity:0;transition:opacity .2s;
+  font-family:var(--mono);
+}
+.story-card:hover .story-read{opacity:1}
+
+/* Empty state */
+.empty-state{
+  grid-column:1/-1;
+  padding:80px 24px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.empty-icon{font-size:40px;opacity:.3}
+.empty-title{font-family:var(--serif);font-size:1.3rem;color:var(--ink)}
+.empty-sub{font-size:.82rem;color:rgba(26,20,16,.4)}
+body.dark .empty-title{color:#f0e8dc}
+body.dark .empty-sub{color:rgba(240,232,220,.3)}
+
+/* =====================================================
+   QUOTE — baris bersih
+===================================================== */
+.quote-bg{
+  position:relative;z-index:10;
+  background:var(--paper2);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:88px 56px;
+  overflow:hidden;
+}
+.quote-mark{
+  font-family:var(--serif);
+  font-size:280px;font-weight:700;
+  color:rgba(139,94,60,.06);
+  line-height:.5;
+  position:absolute;top:0;left:40px;
+  user-select:none;pointer-events:none;
+}
+.quote-inner{
+  max-width:800px;margin:0 auto;
+  text-align:center;position:relative;z-index:2;
+}
+.quote-text{
+  font-family:var(--serif);
+  font-size:clamp(18px,2.3vw,28px);
+  font-style:italic;font-weight:400;
+  line-height:1.6;color:var(--ink);
+  margin-bottom:20px;
+  transition:opacity .3s;
+}
+.quote-attr{
+  font-size:.6rem;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(26,20,16,.35);margin-bottom:28px;
+  font-family:var(--mono);
+}
+.quote-dots{display:flex;gap:6px;justify-content:center}
+.qdot{
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(139,94,60,.2);border:none;
+  cursor:pointer;padding:0;transition:all .2s;
+}
+.qdot.on{background:var(--coffee);transform:scale(1.8)}
+
+/* =====================================================
+   TOPICS — 6 item, layout tabel
+===================================================== */
+.topics-bg{
+  position:relative;z-index:10;
+  background:var(--paper);padding:80px 0;
+}
+.topics-head{padding:0 56px;margin-bottom:40px}
+.topics-list{
+  border-top:1px solid var(--line);
+}
+.topic-item{
+  display:grid;
+  grid-template-columns:64px 1fr auto auto;
+  align-items:center;gap:24px;
+  padding:22px 56px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  transition:background .15s;
+}
+.topic-item:hover{background:var(--paper2)}
+body.dark .topic-item:hover{background:#1c1610}
+.topic-num{
+  font-family:var(--mono);font-size:.65rem;
+  color:rgba(26,20,16,.25);letter-spacing:.12em;
+}
+.topic-name{
+  font-family:var(--serif);
+  font-size:clamp(16px,1.4vw,20px);
+  font-weight:700;color:var(--ink);
+  letter-spacing:-.01em;
+}
+.topic-sub{
+  font-size:.72rem;color:rgba(26,20,16,.4);
+  font-family:var(--mono);letter-spacing:.06em;
+}
+.topic-arrow-wrap{
+  width:36px;height:36px;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;color:var(--coffee);
+  transition:background .2s,transform .2s;
+}
+.topic-item:hover .topic-arrow-wrap{background:var(--coffee);color:var(--cream);transform:rotate(-45deg)}
+body.dark .topic-num{color:rgba(240,232,220,.2)}
+
+/* =====================================================
+   SUBMIT — dua kolom
+===================================================== */
+.submit-bg{
+  position:relative;z-index:10;
+  background:var(--paper2);
+  border-top:1px solid var(--line);
+  padding:80px 56px;
+}
+.submit-grid{
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:72px;align-items:start;
+}
+.submit-kicker{
+  font-size:.58rem;font-weight:700;
+  letter-spacing:.24em;text-transform:uppercase;
+  color:var(--coffee);margin-bottom:14px;
+  font-family:var(--mono);
+}
+.submit-title{
+  font-family:var(--serif);
+  font-size:clamp(22px,2.4vw,34px);
+  font-weight:700;line-height:1.1;
+  color:var(--ink);margin-bottom:16px;
+}
+.submit-title i{font-style:italic;color:var(--coffee)}
+.submit-desc{
+  font-size:.875rem;line-height:1.8;
+  color:rgba(26,20,16,.5);font-weight:300;
+}
+body.dark .submit-title{color:#f0e8dc}
+body.dark .submit-desc{color:rgba(240,232,220,.45)}
+body.dark .submit-kicker{color:var(--warm)}
+
+.submit-form{display:flex;flex-direction:column;gap:10px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-input,.form-textarea{
+  width:100%;padding:12px 14px;
+  background:var(--cream);
+  border:1px solid var(--line);
+  font-family:var(--sans);font-size:.875rem;
+  color:var(--ink);outline:none;resize:none;
+  transition:border-color .2s,background .2s;
+}
+.form-input:focus,.form-textarea:focus{
+  border-color:var(--coffee);background:#fff;
+}
+.form-input::placeholder,.form-textarea::placeholder{color:rgba(26,20,16,.3)}
+.form-textarea{min-height:100px}
+.submit-ok{
+  display:none;padding:12px 14px;
+  background:rgba(100,200,80,.08);
+  border:1px solid rgba(100,200,80,.2);
+  font-size:.82rem;color:#5aaa3a;
+  line-height:1.6;
+}
+.submit-ok.on{display:block}
+.submit-err{
+  display:none;padding:12px 14px;
+  background:rgba(220,60,60,.07);
+  border:1px solid rgba(220,60,60,.18);
+  font-size:.82rem;color:#c04040;
+  line-height:1.6;
+}
+.submit-err.on{display:block}
+.btn-solid.loading{
+  opacity:.6;pointer-events:none;
+  position:relative;
+}
+.btn-solid.loading::after{
+  content:'';
+  display:inline-block;
+  width:12px;height:12px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  margin-left:8px;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+body.dark .form-input:focus,body.dark .form-textarea:focus{background:#261e16}
+
+/* =====================================================
+   FOOTER — satu baris
+===================================================== */
+footer{
+  position:relative;z-index:10;
+  padding:28px 56px;
+  background:var(--ink);
+  display:flex;align-items:center;
+  justify-content:space-between;
+  border-top:none;
+}
+.footer-logo{
+  font-family:var(--serif);font-size:1rem;
+  font-weight:700;color:rgba(240,232,220,.8);
+}
+.footer-logo em{font-style:italic;color:var(--warm)}
+.footer-links{display:flex;gap:24px}
+.footer-links a{
+  font-size:.6rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(240,232,220,.3);text-decoration:none;
+  transition:color .2s;
+}
+.footer-links a:hover{color:var(--warm)}
+.footer-copy{
+  font-size:.6rem;font-family:var(--mono);
+  color:rgba(240,232,220,.2);
+}
+
+/* =====================================================
+   MODAL
+===================================================== */
+.modal-back{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(26,20,16,.72);
+  backdrop-filter:blur(12px);
+  align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-back.on{display:flex;animation:fadeIn .2s ease}
+.modal-box{
+  background:var(--cream);
+  border:1px solid var(--line);
+  width:100%;max-width:680px;
+  max-height:90vh;overflow-y:auto;
+  position:relative;
+  animation:slideUp .28s ease;
+  box-shadow:0 32px 80px rgba(0,0,0,.3);
+}
+.modal-prog{height:2px;background:var(--line)}
+.modal-prog-bar{
+  height:100%;
+  background:linear-gradient(to right,var(--coffee),var(--warm));
+  width:0%;transition:width .1s;
+}
+.modal-hero-img{
+  width:100%;height:260px;object-fit:cover;
+  display:block;filter:saturate(.88) brightness(.93);
+}
+.modal-close{
+  position:absolute;top:14px;right:14px;
+  width:32px;height:32px;
+  background:rgba(247,242,235,.8);
+  backdrop-filter:blur(8px);
+  border:1px solid var(--line);
+  color:var(--ink);font-size:.75rem;
+  cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.modal-close:hover{background:var(--coffee);color:var(--cream);border-color:var(--coffee)}
+.modal-body{padding:32px 40px 44px}
+.modal-tag{
+  font-size:.58rem;font-weight:700;
+  letter-spacing:.22em;text-transform:uppercase;
+  color:var(--coffee);margin-bottom:10px;font-family:var(--mono);
+}
+.modal-title{
+  font-family:var(--serif);font-size:1.45rem;
+  font-weight:700;line-height:1.2;color:var(--ink);
+  margin-bottom:12px;
+}
+.modal-meta{
+  display:flex;align-items:center;gap:8px;
+  font-size:.62rem;color:rgba(26,20,16,.35);
+  padding-bottom:18px;border-bottom:1px solid var(--line);
+  margin-bottom:22px;font-family:var(--mono);flex-wrap:wrap;
+}
+.modal-content-text{
+  font-size:.9rem;line-height:1.92;
+  color:rgba(26,20,16,.7);font-weight:300;
+}
+.modal-content-text p{margin-bottom:14px}
+
+/* Reactions & share */
+.modal-rx{
+  display:flex;align-items:center;gap:10px;
+  margin-top:28px;padding-top:20px;
+  border-top:1px solid var(--line);flex-wrap:wrap;
+}
+body.dark .modal-rx{border-color:rgba(139,94,60,.12)}
+.rx-label{font-size:.68rem;color:rgba(26,20,16,.35);font-family:var(--mono)}
+body.dark .rx-label{color:rgba(240,232,220,.3)}
+.reaction-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 14px;background:var(--paper2);
+  border:1px solid var(--line);cursor:pointer;
+  font-family:var(--sans);font-size:.82rem;
+  color:rgba(26,20,16,.45);transition:all .18s;
+}
+.reaction-btn:hover{border-color:var(--coffee);color:var(--coffee)}
+.reaction-btn.on{border-color:var(--coffee);background:rgba(139,94,60,.08);color:var(--coffee);font-weight:600}
+.modal-share{
+  display:flex;align-items:center;gap:8px;
+  margin-top:12px;flex-wrap:wrap;
+}
+.sh-label{font-size:.68rem;color:rgba(26,20,16,.35);font-family:var(--mono)}
+body.dark .sh-label{color:rgba(240,232,220,.3)}
+.sh-btn{
+  padding:6px 14px;background:transparent;
+  border:1px solid var(--line);cursor:pointer;
+  font-family:var(--sans);font-size:.7rem;font-weight:500;
+  color:rgba(26,20,16,.45);transition:all .18s;
+}
+.sh-btn:hover{background:var(--coffee);color:var(--cream);border-color:var(--coffee)}
+.sh-btn.wa{color:#25d366;border-color:rgba(37,211,102,.2)}
+.sh-btn.wa:hover{background:#25d366;color:#fff;border-color:#25d366}
+.sh-btn.ok{background:rgba(100,200,80,.08);border-color:rgba(100,200,80,.25);color:#5aaa3a}
+body.dark .sh-btn{color:rgba(240,232,220,.4);border-color:rgba(139,94,60,.15)}
+
+/* =====================================================
+   TOPIC MODAL
+===================================================== */
+.topic-back{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(26,20,16,.65);backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;padding:20px;
+}
+.topic-back.on{display:flex;animation:fadeIn .2s ease}
+.topic-modal-box{
+  background:var(--cream);
+  border:1px solid var(--line);
+  width:100%;max-width:480px;max-height:76vh;
+  overflow-y:auto;
+  animation:slideUp .25s ease;
+  box-shadow:0 24px 60px rgba(0,0,0,.2);
+}
+.topic-hd{
+  padding:22px 28px 16px;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:flex-start;justify-content:space-between;
+  position:sticky;top:0;background:var(--cream);
+}
+body.dark .topic-hd{background:#1c1610}
+.topic-hd-tag{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--coffee);margin-bottom:4px;font-family:var(--mono)}
+.topic-hd-title{font-family:var(--serif);font-size:1.15rem;font-weight:700;color:var(--ink)}
+body.dark .topic-hd-title{color:#f0e8dc}
+.topic-x{
+  width:28px;height:28px;background:transparent;
+  border:1px solid var(--line);color:var(--ink);
+  font-size:.7rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;flex-shrink:0;
+}
+.topic-x:hover{background:var(--coffee);color:var(--cream);border-color:var(--coffee)}
+body.dark .topic-x{color:#f0e8dc;border-color:rgba(139,94,60,.15)}
+.topic-row{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 28px;
+  border-bottom:1px solid rgba(139,94,60,.07);
+  cursor:pointer;transition:background .15s;
+}
+.topic-row:last-child{border-bottom:none}
+.topic-row:hover{background:rgba(139,94,60,.05)}
+body.dark .topic-row:hover{background:rgba(139,94,60,.08)}
+.topic-row-thumb{
+  width:60px;height:46px;object-fit:cover;flex-shrink:0;
+}
+.topic-row-info{flex:1;min-width:0}
+.topic-item-title{
+  font-family:var(--serif);font-size:.88rem;
+  font-weight:700;color:var(--ink);line-height:1.25;margin-bottom:3px;
+}
+.topic-item-meta{font-size:.65rem;color:rgba(26,20,16,.35);font-family:var(--mono)}
+.topic-row-arr{font-size:.8rem;color:var(--coffee);flex-shrink:0;transition:transform .18s}
+.topic-row:hover .topic-row-arr{transform:translateX(4px)}
+
+/* =====================================================
+   TOAST
+===================================================== */
+.toast-box{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:var(--ink);color:rgba(240,232,220,.85);
+  border:1px solid rgba(139,94,60,.15);
+  padding:11px 22px;font-size:.78rem;
+  z-index:2000;opacity:0;
+  transition:opacity .2s,transform .2s;
+  pointer-events:none;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+  font-family:var(--mono);
+}
+.toast-box.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* =====================================================
+   SCROLL REVEAL
+===================================================== */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .65s ease,transform .65s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+/* =====================================================
+   KEYFRAMES
+===================================================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+@media(max-width:960px){
+  nav{padding:0 20px;grid-template-columns:auto 1fr}
+  .nav-left,.nav-right{display:none}
+  .nav-center{text-align:left;padding:0 0 0 12px}
+  .hero-inner{grid-template-columns:1fr}
+  .hero-right{display:none}
+  .hero-left{padding:60px 24px}
+  .hero-section::after,.hero-meta{display:none}
+  .sotm-inner{grid-template-columns:1fr;padding:0 24px}
+  .sotm-number{display:none}
+  .search-bar{padding:14px 24px;flex-wrap:wrap}
+  .stories-bg{padding:48px 0 60px}
+  .stories-head,.stories-grid{padding-left:24px;padding-right:24px}
+  .stories-grid{grid-template-columns:1fr}
+  .story-card.wide{grid-column:span 1}
+  .quote-bg{padding:60px 24px}
+  .topics-bg{padding:60px 0}
+  .topics-head{padding:0 24px}
+  .topic-item{padding:18px 24px;grid-template-columns:40px 1fr auto}
+  .topic-sub{display:none}
+  .submit-bg{padding:60px 24px}
+  .submit-grid{grid-template-columns:1fr;gap:36px}
+  footer{padding:24px;flex-direction:column;gap:14px;text-align:center}
+  .footer-links{flex-wrap:wrap;justify-content:center}
+  .modal-body{padding:24px 20px 36px}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cur"></div>
+<div id="cur-o"></div>
+<!-- GRAIN -->
+<div id="grain"></div>
+
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
+<nav id="nav">
+  <div class="nav-left">
+    <a href="#stories">Stories</a>
+    <a href="#topics">Topik</a>
+  </div>
+  <div class="nav-center">
+    <a href="https://brekacoffee.github.io/" class="nav-logo">Breka <span>Stories</span></a>
+  </div>
+  <div class="nav-right">
+    <a href="#submit">Kirim Cerita</a>
+    <a href="https://brekacoffee.github.io/">Website ↗</a>
+    <button class="nav-theme" id="themeBtn" aria-label="Toggle tema"></button>
+  </div>
+</nav>
+
+<!-- =====================================================
+     HERO
+===================================================== -->
+<section class="hero layer" id="top">
+  <!-- Canvas 3D khusus hero -->
+  <canvas id="hero-canvas"></canvas>
+
+  <div class="hero-inner">
+    <!-- Kiri -->
+    <div class="hero-left">
+      <div class="hero-kicker">Breka Coffee · Pekanbaru · 2025</div>
+      <h1 class="hero-title">
+        Cerita kecil<br/>yang <i>relate</i><br/>sama hidup.
+      </h1>
+      <p class="hero-sub">
+        Pikiran, momen, dan event dari orang-orang yang percaya bahwa satu cangkir kopi bisa mengubah hari.
+      </p>
+      <div class="hero-ctas">
+        <a href="#stories" class="btn-solid">
+          Baca Stories
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6h10M6 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#submit" class="btn-outline">Kirim Ceritamu</a>
+      </div>
+    </div>
+
+    <!-- Kanan — canvas 3D gelas kopi interaktif -->
+    <div class="hero-right" id="heroRightWrap">
+      <canvas class="hero-right-canvas" id="hero-right-canvas"></canvas>
+      <div class="hero-right-badge">Interactive 3D &middot; Drag</div>
+      <div class="hero-right-overlay">
+        <span class="hero-count-big" id="heroCountBig">5</span>
+        <span class="hero-count-label">Stories</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meta strip -->
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <div class="hero-meta-dot"></div>
+      <span>Event &amp; Community</span>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-dot"></div>
+      <span>Cerita &amp; Pikiran</span>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-dot"></div>
+      <span>Pekanbaru, Riau</span>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-dot"></div>
+      <span>Sejak 2025</span>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     STORY OF THE MONTH
+===================================================== -->
+<section class="sotm-bg layer">
+  <div class="sotm-inner">
+    <div class="sotm-number reveal">01</div>
+    <div class="sotm-img-wrap reveal" onclick="openModal('fnb-main')">
+      <img class="sotm-img" src="https://brekacoffee.github.io/fridaynightbreka.jpeg" alt="Friday Night Breka"
+        onerror="this.src='https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=700&q=80'"/>
+      <div class="sotm-img-tag">🏆 Story of the Month</div>
+    </div>
+    <div class="sotm-card reveal" onclick="openModal('fnb-main')">
+      <div>
+        <div class="sotm-eyebrow">Event · April 2025</div>
+        <h2 class="sotm-title">Friday Night Breka — EXPERIENCE yang Nggak Terlupakan</h2>
+        <p class="sotm-desc">Bareng @bike_kawan, @inline.pekanbaru, dan @pacs___ — malam itu bukan sekadar nongkrong. Ini soal rasa kebersamaan yang sesungguhnya.</p>
+        <div class="sotm-meta">
+          <span>Tim Breka</span>
+          <span>·</span>
+          <span id="sotmRT">— menit baca</span>
+        </div>
+      </div>
+      <div class="sotm-cta-row">
+        <div class="sotm-cta">Baca Selengkapnya <span class="sotm-arrow">→</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     SEARCH
+===================================================== -->
+<div class="search-bar layer">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" id="searchInput" type="text"
+      placeholder="Cari cerita atau event..."
+      oninput="handleSearch(this.value)"/>
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+  <div class="filter-group">
+    <button class="filter-btn on" onclick="setFilter(this,'all')">Semua</button>
+    <button class="filter-btn" onclick="setFilter(this,'event')">Event</button>
+    <button class="filter-btn" onclick="setFilter(this,'cerita')">Cerita</button>
+  </div>
+  <span id="searchInfo"></span>
+</div>
+
+<!-- =====================================================
+     STORIES GRID
+===================================================== -->
+<section class="stories-bg layer" id="stories">
+  <div class="stories-head reveal">
+    <div>
+      <div class="section-label">Semua Stories</div>
+      <h2 class="section-title">Stories <i>Pilihan</i></h2>
+    </div>
+    <div id="storiesCount"></div>
+  </div>
+  <div class="stories-grid" id="storiesGrid"></div>
+</section>
+
+<!-- =====================================================
+     QUOTE
+===================================================== -->
+<section class="quote-bg layer">
+  <div class="quote-mark">"</div>
+  <div class="quote-inner">
+    <p class="quote-text" id="quoteText"></p>
+    <div class="quote-attr" id="quoteAttr"></div>
+    <div class="quote-dots" id="quoteDots"></div>
+  </div>
+</section>
+
+<!-- =====================================================
+     TOPICS
+===================================================== -->
+<section class="topics-bg layer" id="topics">
+  <div class="topics-head reveal">
+    <div class="section-label">Jelajahi</div>
+    <h2 class="section-title">Topik <i>Stories</i></h2>
+  </div>
+  <div class="topics-list">
+    <div class="topic-item reveal" onclick="openTopicModal('event')">
+      <div class="topic-num">01</div>
+      <div class="topic-name">Event &amp; Vibes</div>
+      <div class="topic-sub" id="tc-event">— stories</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+    <div class="topic-item reveal" onclick="openTopicModal('cerita')">
+      <div class="topic-num">02</div>
+      <div class="topic-name">Cerita &amp; Pikiran</div>
+      <div class="topic-sub" id="tc-cerita">— stories</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+    <div class="topic-item reveal" onclick="showToast('Komunitas — Segera Hadir ☕')">
+      <div class="topic-num">03</div>
+      <div class="topic-name">Komunitas</div>
+      <div class="topic-sub">Segera hadir</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+    <div class="topic-item reveal" onclick="showToast('Kopi &amp; Rasa — Segera Hadir ☕')">
+      <div class="topic-num">04</div>
+      <div class="topic-name">Kopi &amp; Rasa</div>
+      <div class="topic-sub">Segera hadir</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+    <div class="topic-item reveal" onclick="showToast('Recharge Tips — Segera Hadir ☕')">
+      <div class="topic-num">05</div>
+      <div class="topic-name">Recharge Tips</div>
+      <div class="topic-sub">Segera hadir</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+    <div class="topic-item reveal" onclick="showToast('Behind the Cup — Segera Hadir ☕')">
+      <div class="topic-num">06</div>
+      <div class="topic-name">Behind the Cup</div>
+      <div class="topic-sub">Segera hadir</div>
+      <div class="topic-arrow-wrap">↗</div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     SUBMIT
+===================================================== -->
+<section class="submit-bg layer" id="submit">
+  <div class="submit-grid">
+    <div class="reveal">
+      <div class="submit-kicker">Komunitas Breka</div>
+      <h3 class="submit-title">Punya cerita<br/>dari Breka? <i>Bagikan!</i></h3>
+      <p class="submit-desc" style="margin-top:14px">
+        Setiap pengunjung Breka punya ceritanya sendiri — momen kecil, obrolan seru, atau perasaan yang susah dijelaskan tapi gampang dirasakan. Kirimkan ceritamu dan mungkin akan kami tampilkan di sini. ☕
+      </p>
+    </div>
+    <div class="submit-form reveal">
+      <div class="form-row">
+        <input class="form-input" id="fName" type="text" placeholder="Nama kamu"/>
+        <input class="form-input" id="fContact" type="text" placeholder="Instagram / WA (opsional)"/>
+      </div>
+      <input class="form-input" id="fTitle" type="text" placeholder="Judul cerita kamu"/>
+      <textarea class="form-textarea" id="fContent" placeholder="Ceritakan pengalamanmu di Breka..."></textarea>
+      <button class="btn-solid" id="submitBtn" onclick="submitStory()" style="align-self:flex-start">
+        Kirim Cerita ☕
+      </button>
+      <!-- Status messages -->
+      <div class="submit-ok" id="submitOk">
+        ✅ Ceritamu sudah masuk! Tim Breka akan mereview dan menghubungimu. Makasih ya!
+      </div>
+      <div class="submit-err" id="submitErr">
+        ❌ Waduh, ada masalah koneksi. Coba lagi atau DM kami di Instagram ya!
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+<footer class="layer">
+  <div class="footer-logo">Breka <em>Stories</em></div>
+  <div class="footer-links">
+    <a href="https://brekacoffee.github.io/">Website Utama</a>
+    <a href="https://instagram.com/brekacoffee.id">Instagram</a>
+    <a href="https://brekacoffee.github.io/Talk-With-Breka/">Talk With Breka</a>
+    <a href="https://gofood.co.id/pekanbaru/restaurant/breka-coffee-d9724fc1-039a-4fc8-ac5e-742169a5b4e6">GoFood</a>
+  </div>
+  <div class="footer-copy">© 2026 Breka Coffee, Pekanbaru</div>
+</footer>
+
+<!-- =====================================================
+     STORY MODAL
+===================================================== -->
+<div class="modal-back" id="modalBack" onclick="closeModalOutside(event)">
+  <div class="modal-box" id="modalBox" onscroll="updateProg()">
+    <div class="modal-prog"><div class="modal-prog-bar" id="progBar"></div></div>
+    <div style="position:relative">
+      <img class="modal-hero-img" id="mImg" src="" alt=""/>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tag" id="mTag"></div>
+      <h2 class="modal-title" id="mTitle"></h2>
+      <div class="modal-meta" id="mMeta"></div>
+      <div class="modal-content-text" id="mContent"></div>
+      <div class="modal-rx">
+        <span class="rx-label">Story ini:</span>
+        <button class="reaction-btn" id="btnCoffee" onclick="react('coffee')">
+          <span>☕</span><span id="cntCoffee">0</span>
+        </button>
+        <button class="reaction-btn" id="btnHeart" onclick="react('heart')">
+          <span>❤️</span><span id="cntHeart">0</span>
+        </button>
+      </div>
+      <div class="modal-share">
+        <span class="sh-label">Bagikan:</span>
+        <button class="sh-btn wa" onclick="shareWA()">💬 WhatsApp</button>
+        <button class="sh-btn" id="btnCopy" onclick="copyLink()">🔗 Salin Link</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOPIC MODAL -->
+<div class="topic-back" id="topicBack" onclick="closeTopicOutside(event)">
+  <div class="topic-modal-box">
+    <div class="topic-hd">
+      <div>
+        <div class="topic-hd-tag">Topik</div>
+        <div class="topic-hd-title" id="tmTitle"></div>
+      </div>
+      <button class="topic-x" onclick="closeTopicModal()">✕</button>
+    </div>
+    <div id="tmList"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-box" id="toast"></div>
+
+<!-- =====================================================
+     THREE.JS — HERO LEFT (partikel tipis)
+===================================================== -->
+<script>
+/* Hero kiri — partikel halus floating */
+const hc = document.getElementById('hero-canvas');
+const hScene = new THREE.Scene();
+const hCam = new THREE.PerspectiveCamera(50, hc.clientWidth/hc.clientHeight, .1, 100);
+hCam.position.z = 6;
+const hRend = new THREE.WebGLRenderer({canvas:hc,antialias:true,alpha:true});
+hRend.setClearColor(0,0); hRend.setPixelRatio(Math.min(devicePixelRatio,2));
+hRend.setSize(hc.clientWidth,hc.clientHeight);
+
+/* Partikel debu kopi — titik-titik halus */
+const N=800, pos=new Float32Array(N*3);
+for(let i=0;i<N;i++){
+  pos[i*3]=(Math.random()-.5)*14;
+  pos[i*3+1]=(Math.random()-.5)*10;
+  pos[i*3+2]=(Math.random()-.5)*8;
+}
+const pGeo=new THREE.BufferGeometry();
+pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+const pMat=new THREE.PointsMaterial({color:0x8b5e3c,size:.045,sizeAttenuation:true,transparent:true,opacity:.35});
+const particles=new THREE.Points(pGeo,pMat);
+hScene.add(particles);
+
+/* Ring wireframe — lingkaran elegan */
+const ringGeo=new THREE.TorusGeometry(1.8,.008,4,80);
+const ringMat=new THREE.MeshBasicMaterial({color:0xc8a46a,transparent:true,opacity:.18,wireframe:false});
+const ring1=new THREE.Mesh(ringGeo,ringMat); ring1.rotation.x=.5; hScene.add(ring1);
+const ring2=new THREE.Mesh(new THREE.TorusGeometry(2.8,.006,4,80),
+  new THREE.MeshBasicMaterial({color:0xc8a46a,transparent:true,opacity:.1}));
+ring2.rotation.x=-.3; ring2.rotation.y=.4; hScene.add(ring2);
+
+/* Icosahedron wireframe besar samar */
+const bigIco=new THREE.Mesh(
+  new THREE.IcosahedronGeometry(3,1),
+  new THREE.MeshBasicMaterial({color:0x8b5e3c,wireframe:true,transparent:true,opacity:.04})
+);
+hScene.add(bigIco);
+
+let hMX=0,hMY=0,hTX=0,hTY=0;
+document.addEventListener('mousemove',e=>{
+  hMX=(e.clientX/innerWidth-.5)*2;
+  hMY=(e.clientY/innerHeight-.5)*2;
+});
+window.addEventListener('resize',()=>{
+  hCam.aspect=hc.clientWidth/hc.clientHeight;
+  hCam.updateProjectionMatrix();
+  hRend.setSize(hc.clientWidth,hc.clientHeight);
+});
+const hClk=new THREE.Clock();
+(function animH(){
+  requestAnimationFrame(animH);
+  const t=hClk.getElapsedTime();
+  hTX+=(hMX-hTX)*.03; hTY+=(hMY-hTY)*.03;
+  particles.rotation.y=t*.018+hTX*.08;
+  particles.rotation.x=hTY*.05;
+  ring1.rotation.z=t*.06; ring1.rotation.y=t*.04+hTX*.12;
+  ring2.rotation.z=-t*.04; ring2.rotation.x=-.3+hTY*.08;
+  bigIco.rotation.y=t*.025; bigIco.rotation.x=t*.015;
+  hRend.render(hScene,hCam);
+})();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   HERO KANAN — GELAS KOPI 3D INTERAKTIF
+   Bisa di-drag untuk rotate, auto-rotate, mouse parallax
+═══════════════════════════════════════════════════ */
+(function(){
+  const rC = document.getElementById('hero-right-canvas');
+  if(!rC) return;
+
+  const rS   = new THREE.Scene();
+  const rCam = new THREE.PerspectiveCamera(42, rC.clientWidth/rC.clientHeight, 0.1, 200);
+  rCam.position.set(0, 0.5, 9);
+
+  const rR = new THREE.WebGLRenderer({canvas:rC, antialias:true, alpha:true});
+  rR.setPixelRatio(Math.min(devicePixelRatio,2));
+  rR.setSize(rC.clientWidth, rC.clientHeight);
+  rR.setClearColor(0x0a0704, 1); /* Background gelap kopi espresso */
+  rR.shadowMap.enabled = true;
+  rR.shadowMap.type    = THREE.PCFSoftShadowMap;
+  rR.toneMapping       = THREE.ACESFilmicToneMapping;
+  rR.toneMappingExposure = 1.2;
+
+  /* ── PENCAHAYAAN DRAMATIS ── */
+  rS.add(new THREE.AmbientLight(0x1a0e06, 1.2));
+
+  /* Rim light — dari belakang kiri, amber hangat */
+  const lRim = new THREE.PointLight(0xc87020, 80, 30, 2);
+  lRim.position.set(-5, 6, -3);
+  rS.add(lRim);
+
+  /* Key light — dari kanan atas */
+  const lKey = new THREE.SpotLight(0xffe0a0, 60, 40, Math.PI/5, 0.4, 2);
+  lKey.position.set(4, 8, 5);
+  lKey.castShadow = true;
+  lKey.shadow.mapSize.set(512,512);
+  rS.add(lKey);
+
+  /* Fill light — biru dingin dari bawah, kontras */
+  const lFill = new THREE.PointLight(0x203050, 20, 20, 2);
+  lFill.position.set(-3, -4, 4);
+  rS.add(lFill);
+
+  /* Accent — glow oranye dari bawah cup */
+  const lGlow = new THREE.PointLight(0xff6010, 15, 8, 2);
+  lGlow.position.set(0, -2.5, 1);
+  rS.add(lGlow);
+
+  /* ── MATERIAL ── */
+  const matCup = new THREE.MeshStandardMaterial({
+    color: 0x1a1008,
+    emissive: 0x0a0502,
+    metalness: 0.15,
+    roughness: 0.72,
+  });
+  const matCupInner = new THREE.MeshStandardMaterial({
+    color: 0x2a1a0c,
+    roughness: 0.9, metalness: 0.0,
+  });
+  const matCoffee = new THREE.MeshStandardMaterial({
+    color: 0x3a1a08,
+    emissive: 0x120800,
+    roughness: 0.05,
+    metalness: 0.0,
+  });
+  const matFoam = new THREE.MeshStandardMaterial({
+    color: 0xd4a870,
+    roughness: 0.85, metalness: 0.0,
+  });
+  const matSaucer = new THREE.MeshStandardMaterial({
+    color: 0x181008,
+    emissive: 0x060300,
+    metalness: 0.1,
+    roughness: 0.65,
+  });
+  const matGold = new THREE.MeshStandardMaterial({
+    color: 0xc8a040,
+    emissive: 0x3a2800,
+    metalness: 0.9,
+    roughness: 0.18,
+  });
+
+  /* ── GROUP UTAMA — semua bagian cup di sini ── */
+  const cupGroup = new THREE.Group();
+  rS.add(cupGroup);
+
+  /* ── SAUCER (piring kecil bawah) ── */
+  const saucerGroup = new THREE.Group();
+  saucerGroup.position.y = -1.85;
+
+  /* Piring dasar */
+  const saucerBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.1, 1.85, 0.15, 64),
+    matSaucer
+  );
+  saucerGroup.add(saucerBase);
+
+  /* Bibir saucer */
+  const saucerRim = new THREE.Mesh(
+    new THREE.TorusGeometry(2.0, 0.08, 12, 64),
+    matGold
+  );
+  saucerRim.rotation.x = Math.PI/2;
+  saucerRim.position.y = 0.07;
+  saucerGroup.add(saucerRim);
+
+  /* Cekungan untuk cup */
+  const saucerDip = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.95, 0.85, 0.1, 48),
+    matSaucer
+  );
+  saucerDip.position.y = 0.1;
+  saucerGroup.add(saucerDip);
+
+  cupGroup.add(saucerGroup);
+
+  /* ── CUP BODY — dibuat dari CylinderGeometry ── */
+  /* Dinding luar */
+  const cupOuter = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.15, 0.82, 2.6, 64, 1, true),
+    matCup
+  );
+  cupOuter.castShadow = true;
+  cupGroup.add(cupOuter);
+
+  /* Dinding dalam */
+  const cupInner = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.05, 0.76, 2.55, 64, 1, true),
+    matCupInner
+  );
+  cupGroup.add(cupInner);
+
+  /* Dasar cup */
+  const cupBottom = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.82, 0.82, 0.08, 48),
+    matCup
+  );
+  cupBottom.position.y = -1.3;
+  cupGroup.add(cupBottom);
+
+  /* Bibir cup (rim atas) — cincin emas tipis */
+  const cupRim = new THREE.Mesh(
+    new THREE.TorusGeometry(1.14, 0.055, 12, 64),
+    matGold
+  );
+  cupRim.rotation.x = Math.PI/2;
+  cupRim.position.y = 1.3;
+  cupGroup.add(cupRim);
+
+  /* ── KOPI di dalam ── */
+  const coffeeDisc = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.02, 1.02, 0.06, 48),
+    matCoffee
+  );
+  coffeeDisc.position.y = 0.98;
+  cupGroup.add(coffeeDisc);
+
+  /* ── LATTE ART — lingkaran foam di atas kopi ── */
+  /* Foam dasar */
+  const foam = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.0, 1.0, 0.06, 48),
+    matFoam
+  );
+  foam.position.y = 1.02;
+  cupGroup.add(foam);
+
+  /* Pola latte art — lingkaran-lingkaran kecil */
+  const latteGroup = new THREE.Group();
+  latteGroup.position.y = 1.06;
+
+  /* Buat pola latte art dari torus pipih */
+  function addLatteRing(r, thick, color, opa) {
+    const m = new THREE.Mesh(
+      new THREE.TorusGeometry(r, thick, 4, 48),
+      new THREE.MeshBasicMaterial({color, transparent:true, opacity:opa})
+    );
+    m.rotation.x = Math.PI/2;
+    latteGroup.add(m);
+  }
+  addLatteRing(0.72, 0.018, 0x8b4a18, 0.75);
+  addLatteRing(0.50, 0.016, 0x6b3510, 0.65);
+  addLatteRing(0.30, 0.014, 0x8b4a18, 0.55);
+  addLatteRing(0.12, 0.012, 0x6b3510, 0.5);
+
+  /* Garis latte art tengah (vertikal & horizontal) */
+  function addLatteLine(rx, ry) {
+    const pts = [];
+    for(let i=0;i<=20;i++) pts.push(new THREE.Vector3((i/10-1)*0.7, 0, 0));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geo,
+      new THREE.LineBasicMaterial({color:0x6b3510,transparent:true,opacity:.5}));
+    line.rotation.y = ry;
+    latteGroup.add(line);
+  }
+  addLatteLine(0, 0);
+  addLatteLine(0, Math.PI/2);
+  addLatteLine(0, Math.PI/4);
+  addLatteLine(0, -Math.PI/4);
+
+  cupGroup.add(latteGroup);
+
+  /* ── HANDLE CUP — telinga gelas ── */
+  const handleGeo = new THREE.TorusGeometry(0.55, 0.09, 14, 32, Math.PI);
+  const handle = new THREE.Mesh(handleGeo, matCup);
+  handle.position.set(1.18, 0.1, 0);
+  handle.rotation.z = Math.PI/2;
+  cupGroup.add(handle);
+
+  /* Garis emas tipis di handle */
+  const handleAccent = new THREE.Mesh(
+    new THREE.TorusGeometry(0.55, 0.02, 8, 32, Math.PI),
+    matGold
+  );
+  handleAccent.position.copy(handle.position);
+  handleAccent.rotation.copy(handle.rotation);
+  cupGroup.add(handleAccent);
+
+  /* ── LOGO AREA — disc datar di depan cup ── */
+  /* Canvas texture untuk logo teks "B" */
+  const logoCanvas = document.createElement('canvas');
+  logoCanvas.width = 256; logoCanvas.height = 256;
+  const lctx = logoCanvas.getContext('2d');
+
+  /* Background lingkaran */
+  lctx.fillStyle = 'rgba(0,0,0,0)';
+  lctx.fillRect(0,0,256,256);
+
+  /* Lingkaran luar tipis */
+  lctx.strokeStyle = 'rgba(200,160,64,0.85)';
+  lctx.lineWidth = 4;
+  lctx.beginPath(); lctx.arc(128,128,110,0,Math.PI*2); lctx.stroke();
+
+  /* Huruf B di tengah */
+  lctx.font = 'bold 120px Georgia, serif';
+  lctx.fillStyle = '#c8a040';
+  lctx.textAlign = 'center';
+  lctx.textBaseline = 'middle';
+  lctx.fillText('B', 128, 132);
+
+  /* Teks "BREKA" kecil di bawah */
+  lctx.font = '700 22px Arial, sans-serif';
+  lctx.fillStyle = 'rgba(200,160,64,0.7)';
+  lctx.letterSpacing = '4px';
+  lctx.fillText('BREKA', 128, 205);
+
+  const logoTex = new THREE.CanvasTexture(logoCanvas);
+  const logoDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 48),
+    new THREE.MeshBasicMaterial({
+      map: logoTex,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide
+    })
+  );
+  logoDisc.position.set(0, 0, 1.16);
+  cupGroup.add(logoDisc);
+
+  /* ── ASAP / STEAM — partikel naik dari kopi ── */
+  const steamCount = 30;
+  const steamPositions = [];
+  const steamGroup = new THREE.Group();
+  steamGroup.position.y = 1.1;
+
+  for(let i=0;i<steamCount;i++){
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.045 + Math.random()*0.03, 6, 6),
+      new THREE.MeshBasicMaterial({
+        color: 0xd4c0a8,
+        transparent: true,
+        opacity: 0.08 + Math.random()*0.1
+      })
+    );
+    m.position.set(
+      (Math.random()-0.5)*0.7,
+      Math.random()*2.5,
+      (Math.random()-0.5)*0.5
+    );
+    m.userData.speed = 0.004 + Math.random()*0.006;
+    m.userData.drift = (Math.random()-0.5)*0.003;
+    m.userData.initY = m.position.y;
+    steamGroup.add(m);
+    steamPositions.push(m);
+  }
+  cupGroup.add(steamGroup);
+
+  /* ── PARTIKEL BACKGROUND — debu kopi mengambang ── */
+  const bgPCount = 300;
+  const bgPPos = new Float32Array(bgPCount*3);
+  for(let i=0;i<bgPCount;i++){
+    bgPPos[i*3]   = (Math.random()-0.5)*18;
+    bgPPos[i*3+1] = (Math.random()-0.5)*14;
+    bgPPos[i*3+2] = (Math.random()-0.5)*10;
+  }
+  const bgPGeo = new THREE.BufferGeometry();
+  bgPGeo.setAttribute('position', new THREE.BufferAttribute(bgPPos,3));
+  const bgPMesh = new THREE.Points(bgPGeo, new THREE.PointsMaterial({
+    color:0xc8a046, size:0.04, sizeAttenuation:true, transparent:true, opacity:0.25
+  }));
+  rS.add(bgPMesh);
+
+  /* ── DRAG ROTATION ── */
+  let isDrag=false, prevDX=0, prevDY=0;
+  let velX=0, velY=0;
+  let rotX=0, rotY=0;
+
+  const wrap = document.getElementById('heroRightWrap') || rC;
+  wrap.style.cursor='grab';
+
+  rC.addEventListener('mousedown', e=>{
+    isDrag=true; prevDX=e.clientX; prevDY=e.clientY;
+    velX=0; velY=0; wrap.style.cursor='grabbing';
+  });
+  window.addEventListener('mouseup',()=>{isDrag=false; wrap.style.cursor='grab'});
+  window.addEventListener('mousemove',e=>{
+    if(!isDrag) return;
+    const dx=e.clientX-prevDX, dy=e.clientY-prevDY;
+    velX=dx*0.005; velY=dy*0.004;
+    rotY+=velX; rotX+=velY;
+    rotX=Math.max(-0.9,Math.min(0.9,rotX));
+    prevDX=e.clientX; prevDY=e.clientY;
+  });
+  /* Touch */
+  let pTX=0,pTY=0;
+  rC.addEventListener('touchstart',e=>{pTX=e.touches[0].clientX;pTY=e.touches[0].clientY;isDrag=true;velX=0;velY=0},{passive:true});
+  window.addEventListener('touchend',()=>isDrag=false);
+  window.addEventListener('touchmove',e=>{
+    if(!isDrag)return;
+    const dx=e.touches[0].clientX-pTX, dy=e.touches[0].clientY-pTY;
+    velX=dx*0.005; velY=dy*0.004;
+    rotY+=velX; rotX+=velY;
+    rotX=Math.max(-0.9,Math.min(0.9,rotX));
+    pTX=e.touches[0].clientX; pTY=e.touches[0].clientY;
+  },{passive:true});
+
+  /* ── RESIZE ── */
+  window.addEventListener('resize',()=>{
+    rCam.aspect=rC.clientWidth/rC.clientHeight;
+    rCam.updateProjectionMatrix();
+    rR.setSize(rC.clientWidth,rC.clientHeight);
+  });
+
+  /* ── MOUSE PARALLAX (light hanya, bukan rotasi) ── */
+  let mxL=0,myL=0;
+  document.addEventListener('mousemove',e=>{
+    mxL=(e.clientX/innerWidth-.5)*2;
+    myL=(e.clientY/innerHeight-.5)*2;
+  });
+
+  /* ── ANIMATION LOOP ── */
+  const rClk = new THREE.Clock();
+  (function animR(){
+    requestAnimationFrame(animR);
+    const t = rClk.getElapsedTime();
+
+    /* Auto-rotate perlahan jika tidak di-drag */
+    if(!isDrag){
+      velX *= 0.96;
+      velY *= 0.96;
+      rotY += 0.004 + velX;
+      rotX += velY;
+      rotX = rotX * 0.98; /* Kembalikan ke tengah */
+    }
+
+    cupGroup.rotation.y = rotY;
+    cupGroup.rotation.x = rotX;
+
+    /* Efek breathing — naik turun */
+    cupGroup.position.y = Math.sin(t*0.7)*0.06;
+
+    /* Asap bergerak naik */
+    steamPositions.forEach(s=>{
+      s.position.y += s.userData.speed;
+      s.position.x += s.userData.drift;
+      s.material.opacity -= 0.0006;
+      if(s.position.y > 2.8 || s.material.opacity <= 0){
+        s.position.y = 0;
+        s.position.x = (Math.random()-0.5)*0.7;
+        s.position.z = (Math.random()-0.5)*0.5;
+        s.material.opacity = 0.06 + Math.random()*0.1;
+        s.userData.drift = (Math.random()-0.5)*0.003;
+      }
+    });
+
+    /* Partikel background pelan berputar */
+    bgPMesh.rotation.y = t*0.012;
+
+    /* Light follow mouse */
+    lKey.position.x  = 4 + mxL*2;
+    lKey.position.y  = 8 - myL*1.5;
+    lRim.position.x  = -5 + mxL*1.5;
+
+    /* Latte art lekukan halus */
+    latteGroup.rotation.z = Math.sin(t*0.4)*0.015;
+
+    rR.render(rS, rCam);
+  })();
+})();
+</script>
+
+<!-- =====================================================
+     CURSOR
+===================================================== -->
+<script>
+const cd=document.getElementById('cur'), co=document.getElementById('cur-o');
+let ox=0,oy=0;
+document.addEventListener('mousemove',e=>{
+  cd.style.left=e.clientX+'px'; cd.style.top=e.clientY+'px';
+  ox=e.clientX; oy=e.clientY;
+});
+(function a(){requestAnimationFrame(a);co.style.left=ox+'px';co.style.top=oy+'px'})();
+</script>
+
+<!-- =====================================================
+     APP LOGIC
+===================================================== -->
+<script>
+/* DATA */
+const NOW=Date.now(), DAY=86400000;
+const STORIES=[
+  {id:'fnb-main',tag:'Event',cat:'event',
+   title:'Friday Night Breka — EXPERIENCE yang Nggak Terlupakan',
+   img:'https://brekacoffee.github.io/fridaynightbreka.jpeg',
+   fb:'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=700&q=80',
+   author:'Tim Breka',date:'April 2025',ts:NOW-3*DAY,
+   desc:'Bareng @bike_kawan, @inline.pekanbaru, dan @pacs___ — malam itu bukan sekadar nongkrong.',
+   content:`Malam itu bukan malam biasa di Breka Coffee Pekanbaru. Bareng komunitas @bike_kawan, @inline.pekanbaru, dan @pacs___, kami menciptakan sesuatu yang jauh lebih dari sekadar nongkrong biasa.
+
+Jalanan di depan Breka tiba-tiba penuh energi. Orang-orang datang bukan cuma buat kopi — tapi buat merasakan vibe yang beda. Musik mengalir, obrolan seru terjadi di mana-mana, dan setiap sudut tempat ini hidup dengan caranya sendiri.
+
+Friday Night Breka lahir dari satu keyakinan sederhana: bahwa komunitas yang kuat bisa tumbuh dari hal-hal kecil. Dari secangkir kopi yang dinikmati bareng, dari tawa yang nggak perlu alasan, dari momen-momen yang terasa ringan tapi meninggalkan kesan berat di hati.
+
+Dan malam itu membuktikan semuanya. Terima kasih sudah hadir, sudah menjadi bagian dari cerita Breka. Sampai jumpa di Friday Night berikutnya.`},
+
+  {id:'fnb-public',tag:'Event',cat:'event',
+   title:'Friday Night for Public — Semua Orang Diundang',
+   img:'https://brekacoffee.github.io/FIX.png',
+   fb:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=700&q=80',
+   author:'Tim Breka',date:'April 2025',ts:NOW-5*DAY,
+   desc:'Nggak perlu undangan khusus — cukup datang dan rasakan vibes Breka.',
+   content:`Kali ini, Friday Night Breka terbuka untuk semua. Nggak perlu undangan khusus, nggak perlu kenal siapa-siapa dulu — cukup datang, duduk, dan biarkan suasana Breka yang bekerja.
+
+Ini adalah momen di mana siapapun bisa jadi bagian dari komunitas Breka. Entah kamu yang baru pertama kali kesini, atau yang sudah jadi pelanggan setia — semua disambut dengan hangat dan secangkir kopi terbaik kami.
+
+Friday Night for Public bukan cuma soal event. Ini soal membangun koneksi yang nyata, di tempat yang nyaman, dengan orang-orang yang punya semangat yang sama: tumbuh 1% setiap hari, bareng-bareng.
+
+Nantikan tanggal berikutnya di Instagram kami @brekacoffee.id — dan jangan lupa ajak teman-temanmu!`},
+
+  {id:'kuat-sendiri',tag:'Cerita',cat:'cerita',
+   title:'Nggak Semua Harus Kamu Kuat Sendiri',
+   img:'https://brekacoffee.github.io/brekamoodsignature.jpg',
+   fb:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=700&q=80',
+   author:'Tim Breka',date:'Maret 2025',ts:NOW-40*DAY,
+   desc:'Kadang yang kita butuhkan bukan solusi — tapi ruang untuk bernapas.',
+   content:`"Nggak semua harus kamu kuat sendiri…"
+
+Kalimat itu sederhana, tapi kadang justru yang paling susah kita terima. Kita terbiasa pura-pura baik-baik saja. Terbiasa bilang "nggak apa-apa" padahal sebenarnya banyak yang mau dikeluarkan.
+
+Breka percaya bahwa kadang, yang kita butuhkan bukan solusi — tapi ruang untuk bernapas. Secangkir kopi yang hangat, tempat yang tenang, dan rasa bahwa kamu nggak sendirian.
+
+Makanya kami ada. Bukan cuma sebagai kedai kopi, tapi sebagai tempat di mana kamu boleh datang apa adanya. Mau sendiri? Boleh. Mau cerita sama barista kami? Juga boleh. Kamu selalu punya tempat di sini.
+
+Dan kalau kamu butuh lebih dari sekadar kopi, kamu bisa coba Talk With Breka — fitur chat kami yang siap dengerin kamu kapan saja. Karena kami percaya, setiap cerita layak didengar.`},
+
+  {id:'fnb-experience',tag:'Event',cat:'event',
+   title:'Musik, Komunitas & Kopi dalam Satu Malam',
+   img:'https://brekacoffee.github.io/fridaynight.webp',
+   fb:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=700&q=80',
+   author:'Tim Breka',date:'Maret 2025',ts:NOW-45*DAY,
+   desc:'Special Performance DJ Rsyod — beat yang mengalir menyatu dengan tawa dan aroma kopi.',
+   content:`Ada momen-momen di mana semua elemen bertemu dengan sempurna. Musik yang pas, orang-orang yang tepat, dan suasana yang susah dijelaskan tapi gampang dirasakan. Friday Night Breka adalah salah satunya.
+
+Kami menghadirkan Special Performance DJ Rsyod — dan hasilnya luar biasa. Beat yang mengalir menyatu dengan tawa, obrolan, dan tentu saja aroma kopi yang khas dari dapur Breka.
+
+Ini bukan tentang siapa yang paling keren atau paling banyak follower. Ini tentang bagaimana sebuah malam bisa menjadi pengalaman yang diingat lama — bukan karena spektakuler, tapi karena terasa nyata dan hangat.
+
+Setiap Friday Night adalah bab baru dalam cerita Breka. Dan kami senang kamu menjadi bagian dari bab itu. Sampai ketemu di chapter berikutnya — lebih dari sekadar nongkrong!`},
+
+  {id:'bukan-sekadar',tag:'Cerita',cat:'cerita',
+   title:'Breka Bukan Sekadar Kopi',
+   img:'https://brekacoffee.github.io/brekatengah.jpeg',
+   fb:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=700&q=80',
+   author:'Tim Breka',date:'Februari 2025',ts:NOW-90*DAY,
+   desc:'Breka adalah tempat kamu recharge dari capeknya hidup.',
+   content:`Kalau kamu tanya kami, "Breka itu apa?" — jawaban paling jujur kami bukan "kedai kopi". Breka adalah tempat kamu recharge dari capeknya hidup.
+
+Kami memulai ini dengan visi sederhana: bikin tempat di Pekanbaru di mana orang bisa datang, duduk, dan merasa dimengerti. Bukan cuma dilayani — tapi benar-benar dimengerti.
+
+Kopi susu gula aren kami, Breka Mood, dibuat fresh setiap hari. Tapi yang lebih penting dari resepnya adalah niat di baliknya — bahwa setiap tegukan harusnya bikin harimu sedikit lebih baik.
+
+Kami tumbuh dari komunitas Pekanbaru, untuk komunitas Pekanbaru. Dan setiap orang yang pernah duduk di kursi Breka, setiap cerita yang pernah dibagikan di sini — itu semua adalah bagian dari DNA kami.
+
+Terima kasih sudah menjadi bagian dari Breka. Kami nggak bisa ada tanpa kalian.`}
+];
+
+const QUOTES=[
+  {text:"Setiap cup punya cerita, dan setiap cerita layak didengar.",attr:"— Breka Coffee, Pekanbaru"},
+  {text:"Breka bukan cuma kopi, ini tempat aku ketemu versi terbaik dari diri sendiri.",attr:"— Pelanggan setia Breka ☕"},
+  {text:"Pertama kali kesini, langsung ngerasa kayak pulang ke rumah.",attr:"— Pengunjung Friday Night"},
+  {text:"Susah jelasin kenapa Breka beda, tapi setiap habis dari sini selalu pengen balik lagi.",attr:"— @user_pekanbaru"}
+];
+
+/* UTILS */
+function rt(t){return Math.max(1,Math.round(t.trim().split(/\s+/).length/200))+' mnt'}
+function isNew(ts){return (NOW-ts)<7*DAY}
+
+/* STATE */
+let filter='all', q='', currentId=null;
+let reactions={};
+function getRx(id){
+  if(!reactions[id]) reactions[id]={coffee:Math.floor(Math.random()*9)+1,heart:Math.floor(Math.random()*6)+1,mine:[]};
+  return reactions[id];
+}
+
+/* RENDER GRID */
+function getFiltered(){
+  let l=filter==='all'?STORIES:STORIES.filter(s=>s.cat===filter);
+  if(q.trim()){const qq=q.toLowerCase();l=l.filter(s=>s.title.toLowerCase().includes(qq)||s.desc.toLowerCase().includes(qq)||s.tag.toLowerCase().includes(qq))}
+  return l;
+}
+
+function renderGrid(){
+  const list=getFiltered();
+  document.getElementById('storiesCount').textContent=list.length+' stories';
+  const grid=document.getElementById('storiesGrid');
+  if(!list.length){
+    grid.innerHTML=`<div class="empty-state"><div class="empty-icon">☕</div><div class="empty-title">Belum ada stories</div><div class="empty-sub">Coba kata kunci lain</div></div>`;
+    return;
+  }
+  grid.innerHTML=list.map((s,i)=>{
+    const wide=i===0?' wide':'';
+    const newBadge=isNew(s.ts)?`<span style="font-size:.55rem;background:rgba(90,170,58,.1);color:#5aaa3a;padding:2px 8px;border:1px solid rgba(90,170,58,.2);margin-left:6px;font-family:var(--mono)">NEW</span>`:'';
+    return `<div class="story-card${wide}" onclick="openModal('${s.id}')">
+      <div class="story-img-wrap">
+        <img class="story-img" src="${s.img}" alt="${s.title}" loading="lazy"
+          onerror="this.src='${s.fb}'"/>
+      </div>
+      <div class="story-body">
+        <div class="story-tag">${s.tag}</div>
+        <div class="story-title">${s.title}${newBadge}</div>
+        <div class="story-desc">${s.desc}</div>
+        <div class="story-divider"></div>
+        <div class="story-meta">
+          <span>${s.author} · ${s.date}</span>
+          <span class="story-read">${rt(s.content)} →</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* SEARCH */
+function handleSearch(v){
+  q=v;
+  document.getElementById('searchClear').classList.toggle('on',v.length>0);
+  document.getElementById('searchInfo').textContent=v.trim()?getFiltered().length+' ditemukan':'';
+  renderGrid();
+}
+function clearSearch(){
+  document.getElementById('searchInput').value=''; q='';
+  document.getElementById('searchClear').classList.remove('on');
+  document.getElementById('searchInfo').textContent='';
+  renderGrid();
+}
+function setFilter(btn,cat){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); filter=cat; renderGrid();
+}
+
+/* MODAL */
+function openModal(id){
+  const s=STORIES.find(x=>x.id===id); if(!s) return;
+  currentId=id;
+  const img=document.getElementById('mImg');
+  img.src=s.img; img.onerror=()=>img.src=s.fb; img.alt=s.title;
+  document.getElementById('mTag').textContent=s.tag;
+  document.getElementById('mTitle').textContent=s.title;
+  const nb=isNew(s.ts)?'<span style="font-size:.58rem;background:rgba(90,170,58,.08);color:#5aaa3a;padding:2px 8px;border:1px solid rgba(90,170,58,.18)">NEW</span>':'';
+  document.getElementById('mMeta').innerHTML=`${s.author} · ${s.date} · ${rt(s.content)}${nb?'&nbsp;'+nb:''}`;
+  document.getElementById('mContent').innerHTML=s.content.split('\n\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('');
+  const r=getRx(id);
+  document.getElementById('cntCoffee').textContent=r.coffee;
+  document.getElementById('cntHeart').textContent=r.heart;
+  document.getElementById('btnCoffee').className='reaction-btn'+(r.mine.includes('coffee')?' on':'');
+  document.getElementById('btnHeart').className='reaction-btn'+(r.mine.includes('heart')?' on':'');
+  document.getElementById('progBar').style.width='0%';
+  document.getElementById('btnCopy').textContent='🔗 Salin Link';
+  document.getElementById('btnCopy').className='sh-btn';
+  document.getElementById('modalBox').scrollTop=0;
+  document.getElementById('modalBack').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){document.getElementById('modalBack').classList.remove('on');document.body.style.overflow='';currentId=null}
+function closeModalOutside(e){if(e.target===document.getElementById('modalBack'))closeModal()}
+function updateProg(){
+  const b=document.getElementById('modalBox');
+  document.getElementById('progBar').style.width=Math.min(100,(b.scrollTop/(b.scrollHeight-b.clientHeight))*100)+'%';
+}
+
+/* REACTIONS */
+function react(type){
+  if(!currentId)return;
+  const r=getRx(currentId);
+  const cnt=type==='coffee'?'cntCoffee':'cntHeart';
+  const btn=type==='coffee'?'btnCoffee':'btnHeart';
+  if(r.mine.includes(type)){r.mine=r.mine.filter(x=>x!==type);r[type]--}
+  else{r.mine.push(type);r[type]++}
+  document.getElementById(cnt).textContent=r[type];
+  document.getElementById(btn).className='reaction-btn'+(r.mine.includes(type)?' on':'');
+}
+
+/* SHARE */
+function shareWA(){
+  if(!currentId)return;
+  const s=STORIES.find(x=>x.id===currentId);
+  window.open('https://wa.me/?text='+encodeURIComponent('Baca cerita ini dari Breka Stories: "'+s.title+'" ☕\nhttps://brekacoffee.github.io/stories/#'+currentId),'_blank');
+}
+function copyLink(){
+  if(!currentId)return;
+  const url='https://brekacoffee.github.io/stories/#'+currentId;
+  navigator.clipboard.writeText(url).then(()=>{
+    const b=document.getElementById('btnCopy');
+    b.textContent='✅ Tersalin!'; b.className='sh-btn ok';
+    setTimeout(()=>{b.textContent='🔗 Salin Link';b.className='sh-btn'},2000);
+  }).catch(()=>showToast('Link: '+url));
+}
+
+/* TOPIC MODAL */
+const TOPIC_NAMES={event:'Event & Vibes',cerita:'Cerita & Pikiran'};
+function openTopicModal(cat){
+  const list=STORIES.filter(s=>s.cat===cat);
+  document.getElementById('tmTitle').textContent=TOPIC_NAMES[cat]||cat;
+  document.getElementById('tmList').innerHTML=list.map(s=>`
+    <div class="topic-row" onclick="openTopicStory('${s.id}')">
+      <img class="topic-row-thumb" src="${s.img}" alt="" loading="lazy" onerror="this.src='${s.fb}'"/>
+      <div class="topic-row-info">
+        <div class="topic-item-title">${s.title}</div>
+        <div class="topic-item-meta">${s.author} · ${rt(s.content)}</div>
+      </div>
+      <div class="topic-row-arr">→</div>
+    </div>`).join('');
+  document.getElementById('topicBack').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function openTopicStory(id){closeTopicModal();setTimeout(()=>openModal(id),100)}
+function closeTopicModal(){document.getElementById('topicBack').classList.remove('on');document.body.style.overflow=''}
+function closeTopicOutside(e){if(e.target===document.getElementById('topicBack'))closeTopicModal()}
+
+/* QUOTES */
+let qIdx=0;
+function showQuote(i){
+  const q=QUOTES[i];
+  const el=document.getElementById('quoteText');
+  el.style.opacity='0';
+  setTimeout(()=>{el.textContent=q.text;document.getElementById('quoteAttr').textContent=q.attr;el.style.opacity='1'},300);
+  document.querySelectorAll('.qdot').forEach((d,j)=>d.classList.toggle('on',j===i));
+}
+function initQuotes(){
+  const dots=document.getElementById('quoteDots');
+  QUOTES.forEach((_,i)=>{
+    const d=document.createElement('button');d.className='qdot'+(i===0?' on':'');
+    d.onclick=()=>{qIdx=i;showQuote(i)};dots.appendChild(d);
+  });
+  showQuote(0);
+  setInterval(()=>{qIdx=(qIdx+1)%QUOTES.length;showQuote(qIdx)},5500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUBMIT — kirim ke Google Sheets via Apps Script
+   GANTI URL DI BAWAH dengan URL deployment kamu!
+═══════════════════════════════════════════════════════ */
+const APPS_SCRIPT_URL = "PASTE_URL_APPS_SCRIPT_KAMU_DI_SINI";
+//
+// Contoh URL yang benar:
+// "https://script.google.com/macros/s/AKfycbXXXXXXXXXX/exec"
+//
+// Cara dapat URL-nya → baca file breka-stories-script.gs
+// yang ada di folder yang sama dengan index.html ini.
+
+async function submitStory(){
+  const nama   = document.getElementById('fName').value.trim();
+  const kontak = document.getElementById('fContact').value.trim();
+  const judul  = document.getElementById('fTitle').value.trim();
+  const cerita = document.getElementById('fContent').value.trim();
+
+  // Validasi
+  if(!nama)   { showToast('Isi nama kamu dulu ya! 😊'); document.getElementById('fName').focus(); return; }
+  if(!judul)  { showToast('Judulnya belum diisi nih! ✍️'); document.getElementById('fTitle').focus(); return; }
+  if(!cerita) { showToast('Ceritanya belum ditulis! ☕'); document.getElementById('fContent').focus(); return; }
+  if(cerita.length < 30) { showToast('Ceritanya terlalu pendek, tulis lebih banyak ya!'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  const ok  = document.getElementById('submitOk');
+  const err = document.getElementById('submitErr');
+
+  // Sembunyikan pesan lama
+  ok.classList.remove('on');
+  err.classList.remove('on');
+
+  // Cek apakah URL sudah diisi
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "https://script.google.com/macros/s/AKfycby0hUYVQnYgUeMGhaCc77l3ApKXEsgCj2PX0CbJYihlPNY5K2q1RLRClKzdqrUxG7RPcQ/exec") {
+    // Mode demo — belum setup Google Sheets
+    showToast('⚙️ Form belum terhubung ke Google Sheets. Setup dulu ya!');
+    console.warn('Breka Stories: Isi APPS_SCRIPT_URL dengan URL deployment Google Apps Script kamu.');
+    // Tapi tetap tampilkan sukses untuk demo
+    btn.classList.add('loading');
+    await new Promise(r => setTimeout(r, 1200));
+    btn.classList.remove('loading');
+    ['fName','fContact','fTitle','fContent'].forEach(id=>document.getElementById(id).value='');
+    ok.classList.add('on');
+    setTimeout(()=>ok.classList.remove('on'), 6000);
+    return;
+  }
+
+  // Kirim ke Google Sheets
+  btn.classList.add('loading');
+  btn.textContent = 'Mengirim...';
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode:   'no-cors', // Google Apps Script perlu ini
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, kontak, judul, cerita })
+    });
+
+    // no-cors tidak bisa baca response, jadi anggap sukses
+    // Reset form
+    ['fName','fContact','fTitle','fContent'].forEach(id=>document.getElementById(id).value='');
+    ok.classList.add('on');
+    setTimeout(()=>ok.classList.remove('on'), 8000);
+
+  } catch(e) {
+    console.error('Submit error:', e);
+    err.classList.add('on');
+    setTimeout(()=>err.classList.remove('on'), 6000);
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = 'Kirim Cerita ☕';
+  }
+}
+
+/* TOAST */
+let tt;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200);
+}
+
+/* THEME */
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  document.body.classList.toggle('dark');
+  localStorage.setItem('breka-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+if(localStorage.getItem('breka-theme')==='dark') document.body.classList.add('dark');
+
+/* NAV SCROLL */
+window.addEventListener('scroll',()=>
+  document.getElementById('nav').classList.toggle('solid',scrollY>40));
+
+/* SCROLL REVEAL */
+const ro=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+/* KEYBOARD */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeModal();closeTopicModal()}
+});
+
+/* INIT */
+(function init(){
+  renderGrid();
+  document.getElementById('heroCountBig').textContent=STORIES.length;
+  document.getElementById('sotmRT').textContent=rt(STORIES[0].content)+' baca';
+  ['event','cerita'].forEach(cat=>{
+    const el=document.getElementById('tc-'+cat);
+    if(el)el.textContent=STORIES.filter(s=>s.cat===cat).length+' stories';
+  });
+  initQuotes();
+  setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>ro.observe(el)),200);
+})();
+</script>
+</body>
+</html>
