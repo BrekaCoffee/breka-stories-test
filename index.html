@@ -2063,71 +2063,86 @@ function initQuotes(){
   setInterval(()=>{qIdx=(qIdx+1)%QUOTES.length;showQuote(qIdx)},5500);
 }
 
-/* ═══════════════════════════════════════════════════════
-   SUBMIT — kirim ke Google Sheets via Apps Script
-   GANTI URL DI BAWAH dengan URL deployment kamu!
-═══════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8nZySs-kI1lMmfs3ODWj4BHdyOb1NKNbcIR_O4nLDkmrVEGn0JXL6WTTBU1aSggOZmQ/exec";
+const APPS_SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbw8nZySs-kI1lMmfs3ODWj4BHdyOb1NKNbcIR_O4nLDkmrVEGn0JXL6WTTBU1aSggOZmQ/exec";
 
-async function submitStory(){
-  const nama   = document.getElementById('fName').value.trim();
-  const kontak = document.getElementById('fContact').value.trim();
-  const judul  = document.getElementById('fTitle').value.trim();
-  const cerita = document.getElementById('fContent').value.trim();
+async function submitStory() {
 
-  // Validasi
-  if(!nama)   { showToast('Isi nama kamu dulu ya! 😊'); document.getElementById('fName').focus(); return; }
-  if(!judul)  { showToast('Judulnya belum diisi nih! ✍️'); document.getElementById('fTitle').focus(); return; }
-  if(!cerita) { showToast('Ceritanya belum ditulis! ☕'); document.getElementById('fContent').focus(); return; }
-  if(cerita.length < 30) { showToast('Ceritanya terlalu pendek, tulis lebih banyak ya!'); return; }
+  alert("VERSI BARU AKTIF");
 
-  const btn = document.getElementById('submitBtn');
-  const ok  = document.getElementById('submitOk');
-  const err = document.getElementById('submitErr');
+  const nama = document.getElementById("fName").value.trim();
+  const kontak = document.getElementById("fContact").value.trim();
+  const judul = document.getElementById("fTitle").value.trim();
+  const cerita = document.getElementById("fContent").value.trim();
 
-  // Sembunyikan pesan lama
-  ok.classList.remove('on');
-  err.classList.remove('on');
+  console.log("submitStory dipanggil");
 
-  // Cek apakah URL sudah diisi
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_URL')) {
-    showToast('⚙️ Form belum terhubung ke Google Sheets. Setup dulu ya!');
+  console.log({
+    nama,
+    kontak,
+    judul,
+    cerita
+  });
+
+  if (!nama) {
+    alert("Nama wajib diisi");
     return;
   }
 
-  // Kirim ke Google Sheets
-  btn.classList.add('loading');
-  btn.textContent = 'Mengirim...';
+  if (!judul) {
+    alert("Judul wajib diisi");
+    return;
+  }
+
+  if (!cerita) {
+    alert("Cerita wajib diisi");
+    return;
+  }
+
+  const btn = document.getElementById("submitBtn");
+
+  btn.disabled = true;
+  btn.innerHTML = "Mengirim...";
 
   try {
-    // Kirim pakai FormData — cara yang benar untuk Google Apps Script
+
     const formData = new FormData();
-    formData.append('nama', nama);
-    formData.append('kontak', kontak);
-    formData.append('judul', judul);
-    formData.append('cerita', cerita);
+
+    formData.append("nama", nama);
+    formData.append("kontak", kontak);
+    formData.append("judul", judul);
+    formData.append("cerita", cerita);
+
+    console.log("Mengirim ke Apps Script...");
 
     await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
+      method: "POST",
+      mode: "no-cors",
       body: formData
     });
 
-    // no-cors tidak bisa baca response, anggap sukses
-    ['fName','fContact','fTitle','fContent'].forEach(id=>document.getElementById(id).value='');
-    ok.classList.add('on');
-    setTimeout(()=>ok.classList.remove('on'), 8000);
+    console.log("Fetch selesai");
 
-  } catch(e) {
-    console.error('Submit error:', e);
-    err.classList.add('on');
-    setTimeout(()=>err.classList.remove('on'), 6000);
+    alert("Data terkirim");
+
+    document.getElementById("fName").value = "";
+    document.getElementById("fContact").value = "";
+    document.getElementById("fTitle").value = "";
+    document.getElementById("fContent").value = "";
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert("Terjadi error saat mengirim");
+
   } finally {
-    btn.classList.remove('loading');
-    btn.innerHTML = 'Kirim Cerita ☕';
+
+    btn.disabled = false;
+    btn.innerHTML = "Kirim Cerita ☕";
+
   }
 }
-
 /* TOAST */
 let tt;
 function showToast(msg){
